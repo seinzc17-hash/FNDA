@@ -1,581 +1,552 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS 판매 관리 대시보드</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이마트 리버점 주말 장보기 혜택 - 삼겹살 2,000원 즉시 할인</title>
+  <meta name="description" content="이마트 리버점 단독! 35,000원 이상 장보면 국내산 삼겹살 500g 1팩 2,000원 즉시 할인! 11월 7·8일, 14·15일 총 4일간의 특별 혜택을 스마트 장바구니 계산기로 미리 체험해보세요.">
+  <meta property="og:title" content="이마트 리버점 삼겹살 2,000원 할인 프로모션">
+  <meta property="og:description" content="35,000원 이상 장보면 국내산 삼겹살 2,000원 즉시 할인! 11월 7·8일, 14·15일 단 4일간">
+  <meta property="og:image" content="포스터.jpg">
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body>
 
-    <header class="bg-indigo-900 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-700 p-2.5 rounded-xl">
-                    <i class="fa-solid fa-cash-register text-2xl text-amber-300"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold">Smart POS Analytics</h1>
-                    <p class="text-xs text-indigo-200">일별·상품별 판매 현황 대시보드</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <button id="openAddModalBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-sm font-medium transition shadow flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> 신규 데이터 입력
-                </button>
-                <label for="csvFileInput" class="cursor-pointer bg-indigo-700 hover:bg-indigo-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium transition shadow flex items-center gap-2">
-                    <i class="fa-solid fa-file-csv"></i> CSV 업로드
-                </label>
-                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
-                <button id="resetDataBtn" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-200 px-3 py-2 rounded-lg text-sm transition">
-                    기본 복원
-                </button>
-            </div>
-        </div>
-    </header>
+  <!-- 최상단 긴급 혜택 공지 띠배너 -->
+  <aside class="top-notice-bar" aria-label="행사 주요 안내">
+    <span>🚨 <strong>11월 7·8일, 14·15일 단 4일간!</strong> 리버점에서 35,000원 이상 결제 시 국내산 삼겹살 500g <strong>2,000원 즉시 할인</strong></span>
+  </aside>
 
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-        
-        <!-- Filter Bar -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">시작일</label>
-                <input type="date" id="filterStartDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">종료일</label>
-                <input type="date" id="filterEndDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">점포 선택</label>
-                <select id="filterStore" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">전체 점포</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">카테고리</label>
-                <select id="filterCategory" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">전체 카테고리</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">행사 적용</label>
-                <select id="filterEvent" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">전체 (Y/N)</option>
-                    <option value="Y">Y (행사적용)</option>
-                    <option value="N">N (미적용)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">상품 검색</label>
-                <input type="text" id="filterKeyword" placeholder="상품명 또는 코드" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            
-            <div class="sm:col-span-2 md:col-span-3 lg:col-span-6 flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button id="clearBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 px-4 rounded-xl text-sm transition">
-                    필터 초기화
-                </button>
-                <button id="searchBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-xl text-sm transition flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-magnifying-glass"></i> 조건 조회
-                </button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-slate-500">총 매출액</p>
-                    <h3 id="statTotalSales" class="text-xl font-extrabold text-slate-900 mt-1">0원</h3>
-                    <p class="text-xs text-emerald-600 mt-1"><i class="fa-solid fa-arrow-trend-up"></i> 기간 집계</p>
-                </div>
-                <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-2xl">
-                    <i class="fa-solid fa-won-sign text-lg"></i>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-slate-500">총 판매 수량</p>
-                    <h3 id="statTotalQty" class="text-xl font-extrabold text-slate-900 mt-1">0개</h3>
-                    <p class="text-xs text-blue-600 mt-1">전체 품목 합계</p>
-                </div>
-                <div class="bg-blue-50 text-blue-600 p-3.5 rounded-2xl">
-                    <i class="fa-solid fa-box-open text-lg"></i>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-slate-500">총 할인액</p>
-                    <h3 id="statTotalDiscount" class="text-xl font-extrabold text-slate-900 mt-1">0원</h3>
-                    <p class="text-xs text-amber-600 mt-1">행사 적용 금액</p>
-                </div>
-                <div class="bg-amber-50 text-amber-600 p-3.5 rounded-2xl">
-                    <i class="fa-solid fa-tag text-lg"></i>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-slate-500">평균 단가</p>
-                    <h3 id="statAvgPrice" class="text-xl font-extrabold text-slate-900 mt-1">0원</h3>
-                    <p class="text-xs text-purple-600 mt-1">정상단가 평균</p>
-                </div>
-                <div class="bg-purple-50 text-purple-600 p-3.5 rounded-2xl">
-                    <i class="fa-solid fa-calculator text-lg"></i>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between sm:col-span-2 lg:col-span-1">
-                <div>
-                    <p class="text-xs font-medium text-slate-500">조회 건수</p>
-                    <h3 id="statTotalCount" class="text-xl font-extrabold text-slate-900 mt-1">0건</h3>
-                    <p class="text-xs text-indigo-600 mt-1">거래 품목 수</p>
-                </div>
-                <div class="bg-indigo-50 text-indigo-600 p-3.5 rounded-2xl">
-                    <i class="fa-solid fa-receipt text-lg"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-800 text-sm">카테고리별 매출 비중</h3>
-                    <span class="text-xs text-slate-400">Top Categories</span>
-                </div>
-                <div class="relative h-64 flex items-center justify-center">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-800 text-sm">인기 상품 Top 5 (판매량 기준)</h3>
-                    <span class="text-xs text-slate-400">Best Sellers</span>
-                </div>
-                <div class="relative h-64 flex items-center justify-center">
-                    <canvas id="productChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-800 text-sm">상세 판매 내역</h3>
-                <span id="recordCountText" class="text-xs text-slate-500 font-medium">총 0건</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-xs uppercase tracking-wider">
-                            <th class="py-3 px-4">일자</th>
-                            <th class="py-3 px-4">점포</th>
-                            <th class="py-3 px-4">카테고리</th>
-                            <th class="py-3 px-4">상품코드</th>
-                            <th class="py-3 px-4">상품명</th>
-                            <th class="py-3 px-4 text-right">판매수량</th>
-                            <th class="py-3 px-4 text-right">정상단가</th>
-                            <th class="py-3 px-4 text-right">할인액</th>
-                            <th class="py-3 px-4 text-right">매출액</th>
-                            <th class="py-3 px-4 text-center">행사적용</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody" class="divide-y divide-slate-100 text-slate-700">
-                        <!-- Dynamic rows will be inserted here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </main>
-
-    <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200 transform transition-all">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
-                <h3 class="font-bold text-base"><i class="fa-solid fa-plus-circle mr-2"></i> 신규 판매 데이터 직접 입력</h3>
-                <button id="closeModalBtn" class="text-indigo-200 hover:text-white text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <form id="addDataForm" class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">일자 (년-월-일)</label>
-                        <input type="date" id="newDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">점포명</label>
-                        <input type="text" id="newStore" placeholder="예: 센트럴점" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">카테고리</label>
-                        <input type="text" id="newCategory" placeholder="예: 냉장 간편식" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">상품코드</label>
-                        <input type="text" id="newCode" placeholder="예: RM-103" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">상품명</label>
-                    <input type="text" id="newName" placeholder="예: 프리미엄 샐러드" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">판매수량</label>
-                        <input type="number" id="newQty" value="10" min="1" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">정상단가</label>
-                        <input type="number" id="newPrice" value="5000" min="0" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">할인액</label>
-                        <input type="number" id="newDiscount" value="0" min="0" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">행사 적용 여부</label>
-                        <select id="newIsEvent" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="N">N (미적용)</option>
-                            <option value="Y">Y (적용)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">매출액 (자동계산)</label>
-                        <input type="text" id="newSalesCalc" readonly class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-indigo-600 cursor-not-allowed" value="0원">
-                    </div>
-                </div>
-                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                    <button type="button" id="closeModalCancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium transition">취소</button>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-sm">추가하기</button>
-                </div>
-            </form>
-        </div>
+  <!-- 메인 헤더 & 네비게이션 -->
+  <header class="site-header">
+    <div class="container">
+      <a href="#" class="brand-logo" aria-label="이마트 리버점 홈">
+        <span>emart</span>
+        <span class="brand-badge">리버점 단독</span>
+      </a>
+      <nav class="nav-links" aria-label="주요 메뉴">
+        <a href="#benefits">혜택 안내</a>
+        <a href="#calculator">장바구니 계산기</a>
+        <a href="#cardnews">카드뉴스 갤러리</a>
+        <a href="#pairing">추천 꿀조합</a>
+        <a href="#store">오시는 길</a>
+        <a href="#faq">자주 묻는 질문</a>
+      </nav>
+      <a href="#calculator" class="header-cta-btn">
+        <span>🛒</span>
+        <span>장바구니 계산하기</span>
+      </a>
     </div>
+  </header>
 
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
-        POS Dashboard System &copy; 2026. All rights reserved.
-    </footer>
+  <main id="main-content">
+    <!-- 1. 히어로 섹션 (Hero & Live Countdown) -->
+    <section class="hero-section" id="hero">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <div class="hero-tag">
+            <span class="dot"></span>
+            <span>2026 이마트 리버점 특별 기획전</span>
+          </div>
+          <h1 class="hero-title">
+            이번 주말 장보기,<br>
+            <span class="highlight-red">국내산 삼겹살</span><br>
+            <span class="highlight-yellow">2,000원 즉시 할인!</span>
+          </h1>
+          <p class="hero-desc">
+            할인 전 결제 금액 <strong>35,000원 이상</strong> 장보고,<br>
+            신선한 <strong>국내산 삼겹살 500g</strong>을 <strong>11,900원</strong>에 득템하세요!
+          </p>
 
-    <script>
-        // Sample Data matching the user image format
-        const defaultData = [
-            { 일자: "2026-08-01", 점포: "센트럴점", 카테고리: "냉장 간편식", 상품코드: "RM-101", 상품명: "한끼 소불고기덮밥", 판매수량: 44, 정상단가: 5900, 할인액: 0, 매출액: 259600, 행사적용: "N" },
-            { 일자: "2026-08-01", 점포: "센트럴점", 카테고리: "냉장 간편식", 상품코드: "RM-102", 상품명: "매콤 닭갈비볶음밥", 판매수량: 49, 정상단가: 5500, 할인액: 0, 매출액: 269500, 행사적용: "N" },
-            { 일자: "2026-08-01", 점포: "강남점", 카테고리: "냉장 간편식", 상품코드: "RM-101", 상품명: "한끼 소불고기덮밥", 판매수량: 32, 정상단가: 5900, 할인액: 5900, 매출액: 182900, 행사적용: "Y" },
-            { 일자: "2026-08-02", 점포: "센트럴점", 카테고리: "음료/주류", 상품코드: "BV-201", 상품명: "프리미엄 생수 500ml", 판매수량: 120, 정상단가: 1000, 할인액: 0, 매출액: 120000, 행사적용: "N" },
-            { 일자: "2026-08-02", 점포: "강남점", 카테고리: "베이커리", 상품코드: "BK-301", 상품명: "우유 생크림 롤케익", 판매수량: 25, 정상단가: 8500, 할인액: 1700, 매출액: 195500, 행사적용: "Y" },
-            { 일자: "2026-08-03", 점포: "센트럴점", 카테고리: "베이커리", 상품코드: "BK-302", 상품명: "정통 단팥빵", 판매수량: 65, 정상단가: 2200, 할인액: 0, 매출액: 143000, 행사적용: "N" }
-        ];
+          <!-- 행사 일정 & D-Day 실시간 카운트다운 박스 -->
+          <div class="hero-date-box">
+            <div class="date-info">
+              <div class="date-icon" aria-hidden="true">🗓️</div>
+              <div class="date-text">
+                <div class="title">행사 일정 (주말 총 4일간)</div>
+                <div class="days">11.7(토)·8(일) &amp; 11.14(토)·15(일)</div>
+              </div>
+            </div>
 
-        let currentData = [...defaultData];
-        let categoryChartInstance = null;
-        let productChartInstance = null;
+            <!-- 실시간 카운트다운 타이머 -->
+            <div class="countdown-container" aria-label="행사 시작까지 남은 시간">
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cdDays">00</span>
+                <span class="countdown-label">DAYS</span>
+              </div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cdHours">00</span>
+                <span class="countdown-label">HOURS</span>
+              </div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cdMins">00</span>
+                <span class="countdown-label">MINS</span>
+              </div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cdSecs">00</span>
+                <span class="countdown-label">SECS</span>
+              </div>
+            </div>
+          </div>
 
-        // Utility: Format Currency
-        function formatKRW(amount) {
-            return new Intl.NumberFormat('ko-KR').format(amount) + '원';
-        }
+          <div class="hero-actions">
+            <a href="#calculator" class="btn-primary">
+              <span>🧮 35,000원 장바구니 담아보기</span>
+            </a>
+            <a href="#cardnews" class="btn-secondary">
+              <span>📖 행사 카드뉴스 보기</span>
+            </a>
+          </div>
+        </div>
 
-        // Initialize dashboard
-        function initDashboard() {
-            populateFilters();
-            setDefaultDates();
-            renderDashboard(currentData);
-        }
+        <!-- 히어로 비주얼 카드 (실제 포스터 에셋 연동) -->
+        <div class="hero-visual">
+          <div class="hero-visual-card">
+            <div class="poster-floating-badge">
+              <span>🏷️</span>
+              <span>정상가 13,900원 → 혜택가 11,900원</span>
+            </div>
+            <div class="poster-img-wrap" title="클릭 시 크게 보기">
+              <img src="포스터.jpg" alt="이마트 리버점 주말 장보기 혜택 삼겹살 2,000원 할인 포스터">
+            </div>
+            <div class="badge-tag-discount">
+              ✨ 영수증당 2,000원 할인 ✨
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        function setDefaultDates() {
-            if (currentData.length === 0) return;
-            const dates = currentData.map(item => item.일자).sort();
-            document.getElementById('filterStartDate').value = dates[0];
-            document.getElementById('filterEndDate').value = dates[dates.length - 1];
-        }
+    <!-- 2. 할인 참여 2단계 안내 (Step Guide) -->
+    <section class="section section-alt" id="benefits">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">HOW TO GET BENEFIT</span>
+          <h2 class="section-title">어떻게 할인받나요?</h2>
+          <p class="section-desc">복잡한 쿠폰 다운로드 없이, 계산대에서 조건 충족 시 즉시 자동 할인됩니다.</p>
+        </div>
 
-        function populateFilters() {
-            const storeSelect = document.getElementById('filterStore');
-            const categorySelect = document.getElementById('filterCategory');
+        <div class="steps-grid">
+          <!-- Step 1 -->
+          <article class="step-card">
+            <span class="step-badge">STEP 01</span>
+            <div class="step-icon-box">🛒</div>
+            <h3 class="step-card-title">필요한 장보기 35,000원 담기</h3>
+            <p class="step-card-desc">
+              신선 채소, 양념, 음료, 가공식품 등 리버점 매장에서 할인 전 결제금액 35,000원 이상을 채워보세요.
+            </p>
+            <div class="step-tag-box">
+              <span>💡</span>
+              <span>삼겹살 금액을 포함하여 35,000원이면 OK!</span>
+            </div>
+          </article>
 
-            const stores = [...new Set(currentData.map(item => item.점포))].filter(Boolean);
-            const categories = [...new Set(currentData.map(item => item.카테고리))].filter(Boolean);
+          <div class="steps-arrow" aria-hidden="true">➔</div>
 
-            storeSelect.innerHTML = '<option value="">전체 점포</option>';
-            stores.forEach(store => {
-                const opt = document.createElement('option');
-                opt.value = store;
-                opt.textContent = store;
-                storeSelect.appendChild(opt);
-            });
+          <!-- Step 2 -->
+          <article class="step-card step-highlight">
+            <span class="step-badge">STEP 02</span>
+            <div class="step-icon-box">🥩</div>
+            <h3 class="step-card-title">국내산 삼겹살 2,000원 즉시 할인</h3>
+            <p class="step-card-desc">
+              계산대에서 바코드 스캔 시 <strong>국내산 삼겹살 500g 1팩</strong>이 13,900원에서 <strong>11,900원</strong>으로 즉시 차감 결제됩니다.
+            </p>
+            <div class="step-tag-box">
+              <span>🎁</span>
+              <span>영수증 1개당 삼겹살 1팩 제한</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
 
-            categorySelect.innerHTML = '<option value="">전체 카테고리</option>';
-            categories.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                categorySelect.appendChild(opt);
-            });
-        }
+    <!-- 3. [킬러 인터랙티브 기능] 35,000원 스마트 장바구니 계산기 -->
+    <section class="section calculator-section" id="calculator">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">INTERACTIVE SMART CART</span>
+          <h2 class="section-title">35,000원 맞춤 장바구니 계산기</h2>
+          <p class="section-desc">
+            삼겹살과 찰떡궁합인 식재료를 클릭해 담아보세요. 실시간으로 35,000원 달성 여부와 할인 혜택을 미리 확인할 수 있습니다!
+          </p>
+        </div>
 
-        function renderDashboard(data) {
-            renderTable(data);
-            renderSummary(data);
-            renderCharts(data);
-        }
+        <div class="calc-layout">
+          <!-- 상품 선택 리스트 -->
+          <div class="products-wrapper">
+            <!-- 카테고리 필터 버튼 -->
+            <div class="filter-bar" role="tablist" aria-label="상품 카테고리 필터">
+              <button class="filter-btn active" data-filter="all">전체 상품</button>
+              <button class="filter-btn" data-filter="정육">정육(대표)</button>
+              <button class="filter-btn" data-filter="신선채소">신선 채소</button>
+              <button class="filter-btn" data-filter="소스/양념">소스/양념</button>
+              <button class="filter-btn" data-filter="음료">음료/반찬</button>
+            </div>
 
-        function renderTable(data) {
-            const tbody = document.getElementById('dataTableBody');
-            document.getElementById('recordCountText').textContent = `총 ${data.length}건`;
-            tbody.innerHTML = '';
+            <!-- 바닐라JS가 동적으로 생성하는 상품 카드 그리드 -->
+            <div class="items-grid" id="itemsGrid">
+              <!-- JS Generated -->
+            </div>
+          </div>
 
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400">조회된 데이터가 없습니다.</td></tr>`;
-                return;
-            }
+          <!-- 실시간 영수증 & 프로그레스 바 패널 (Sticky) -->
+          <aside class="calc-summary-panel" id="calcSummaryPanel">
+            <div class="summary-header">
+              <h3 class="summary-title">예상 결제 영수증</h3>
+              <button class="reset-cart-btn" id="resetCartBtn">장바구니 초기화</button>
+            </div>
 
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition';
-                tr.innerHTML = `
-                    <td class="py-3 px-4 font-medium text-slate-900">${row.일자}</td>
-                    <td class="py-3 px-4">${row.점포 || '-'}</td>
-                    <td class="py-3 px-4"><span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium">${row.카테고리 || '-'}</span></td>
-                    <td class="py-3 px-4 text-slate-500 font-mono text-xs">${row.상품코드 || '-'}</td>
-                    <td class="py-3 px-4 font-semibold text-slate-800">${row.상품명 || '-'}</td>
-                    <td class="py-3 px-4 text-right font-medium">${Number(row.판매수량 || 0).toLocaleString()}개</td>
-                    <td class="py-3 px-4 text-right text-slate-600">${Number(row.정상단가 || 0).toLocaleString()}원</td>
-                    <td class="py-3 px-4 text-right text-amber-600">${Number(row.할인액 || 0).toLocaleString()}원</td>
-                    <td class="py-3 px-4 text-right font-bold text-indigo-600">${Number(row.매출액 || 0).toLocaleString()}원</td>
-                    <td class="py-3 px-4 text-center">
-                        <span class="px-2 py-0.5 rounded text-xs font-bold ${row.행사적용 === 'Y' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}">
-                            ${row.행사적용 || 'N'}
-                        </span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+            <!-- 35,000원 달성 프로그레스 미터 -->
+            <div class="meter-card">
+              <div class="meter-labels">
+                <span class="meter-current">현재 합계: <strong id="meterCurrentVal">13,900원</strong></span>
+                <span class="meter-target">목표: 35,000원</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill" id="meterBarFill" style="width: 40%;"></div>
+              </div>
+              <div class="meter-status-msg" id="meterStatusMsg">
+                💡 삼겹살 <strong>2,000원 할인</strong>까지 <strong>21,100원</strong> 남았어요!
+              </div>
+            </div>
 
-        function renderSummary(data) {
-            const totalSales = data.reduce((sum, item) => sum + Number(item.매출액 || 0), 0);
-            const totalQty = data.reduce((sum, item) => sum + Number(item.판매수량 || 0), 0);
-            const totalDiscount = data.reduce((sum, item) => sum + Number(item.할인액 || 0), 0);
-            const avgPrice = data.length > 0 ? data.reduce((sum, item) => sum + Number(item.정상단가 || 0), 0) / data.length : 0;
+            <!-- 결제 금액 내역 -->
+            <div class="receipt-rows">
+              <div class="receipt-row">
+                <span>할인 전 장바구니 합계</span>
+                <span id="receiptSubtotal">13,900원</span>
+              </div>
+              <div class="receipt-row discount-row" id="receiptDiscountRow" style="display: none;">
+                <span>프로모션 특별 할인 (삼겹살 1팩)</span>
+                <span id="receiptDiscount">-2,000원</span>
+              </div>
+              <div class="receipt-divider"></div>
+              <div class="receipt-row total-row">
+                <span>최종 예상 결제액</span>
+                <span class="total-price" id="receiptTotal">13,900원</span>
+              </div>
+            </div>
 
-            document.getElementById('statTotalSales').textContent = formatKRW(totalSales);
-            document.getElementById('statTotalQty').textContent = Number(totalQty).toLocaleString() + '개';
-            document.getElementById('statTotalDiscount').textContent = formatKRW(totalDiscount);
-            document.getElementById('statAvgPrice').textContent = formatKRW(Math.round(avgPrice));
-            document.getElementById('statTotalCount').textContent = data.length.toLocaleString() + '건';
-        }
+            <!-- 액션 버튼 -->
+            <div class="calc-action-btns">
+              <button class="btn-copy-list" id="copyListBtn">
+                <span>📋</span>
+                <span>장보기 목록 복사하기</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
 
-        function renderCharts(data) {
-            const categoryMap = {};
-            const productMap = {};
+    <!-- 4. 카드뉴스 반응형 갤러리 (카드뉴스 1~5 에셋 연동) -->
+    <section class="section section-alt" id="cardnews">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">PROMOTION STORY</span>
+          <h2 class="section-title">한눈에 보는 카드뉴스</h2>
+          <p class="section-desc">행사 상품과 혜택, 추천 꿀조합을 슬라이드로 편리하게 넘겨보세요. (클릭 시 확대)</p>
+        </div>
 
-            data.forEach(item => {
-                const cat = item.카테고리 || '기타';
-                categoryMap[cat] = (categoryMap[cat] || 0) + Number(item.매출액 || 0);
+        <div class="carousel-wrapper">
+          <button class="carousel-btn prev" id="carouselPrev" aria-label="이전 카드뉴스">‹</button>
+          
+          <div class="carousel-viewport">
+            <div class="carousel-slides" id="carouselSlides">
+              <!-- Slide 1 -->
+              <div class="carousel-slide" data-index="0" title="클릭하여 확대보기">
+                <img src="카드뉴스1.jpeg" alt="카드뉴스 1편: 이마트 리버점 장보기 혜택 삼겹살 2000원 즉시 할인">
+                <div class="slide-caption-bar">
+                  <span>1 / 5 이번 주말, 장보기 혜택 안내</span>
+                  <span>🔍 확대하기</span>
+                </div>
+              </div>
+              <!-- Slide 2 -->
+              <div class="carousel-slide" data-index="1" title="클릭하여 확대보기">
+                <img src="카드뉴스2.jpeg" alt="카드뉴스 2편: 어떤 상품이 할인되나요? 국내산 삼겹살 500g">
+                <div class="slide-caption-bar">
+                  <span>2 / 5 행사 대표 상품 및 할인 가격</span>
+                  <span>🔍 확대하기</span>
+                </div>
+              </div>
+              <!-- Slide 3 -->
+              <div class="carousel-slide" data-index="2" title="클릭하여 확대보기">
+                <img src="카드뉴스3.png" alt="카드뉴스 3편: 어떻게 할인받나요? 2단계 장보기 가이드">
+                <div class="slide-caption-bar">
+                  <span>3 / 5 35,000원 장보기 달성 방법</span>
+                  <span>🔍 확대하기</span>
+                </div>
+              </div>
+              <!-- Slide 4 -->
+              <div class="carousel-slide" data-index="3" title="클릭하여 확대보기">
+                <img src="카드뉴스4.png" alt="카드뉴스 4편: 함께 살펴볼 장보기 상품 삼겹살 꿀조합">
+                <div class="slide-caption-bar">
+                  <span>4 / 5 삼겹살과 함께 담기 좋은 추천 조합</span>
+                  <span>🔍 확대하기</span>
+                </div>
+              </div>
+              <!-- Slide 5 -->
+              <div class="carousel-slide" data-index="4" title="클릭하여 확대보기">
+                <img src="카드뉴스5.jpg" alt="카드뉴스 5편: 행사 기간 및 조건 꼭 확인해주세요">
+                <div class="slide-caption-bar">
+                  <span>5 / 5 행사 기간 및 유의사항</span>
+                  <span>🔍 확대하기</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                const prod = item.상품명 || '기타 상품';
-                productMap[prod] = (productMap[prod] || 0) + Number(item.판매수량 || 0);
-            });
+          <button class="carousel-btn next" id="carouselNext" aria-label="다음 카드뉴스">›</button>
 
-            // Category Chart (Doughnut)
-            const catLabels = Object.keys(categoryMap);
-            const catValues = Object.values(categoryMap);
+          <!-- 점 인디케이터 -->
+          <div class="carousel-dots" id="carouselDots"></div>
+          <p class="carousel-hint">💡 좌우 화살표를 누르거나 화면을 스와이프하여 넘겨보세요.</p>
+        </div>
+      </div>
+    </section>
 
-            if (categoryChartInstance) categoryChartInstance.destroy();
-            const ctxCat = document.getElementById('categoryChart').getContext('2d');
-            categoryChartInstance = new Chart(ctxCat, {
-                type: 'doughnut',
-                data: {
-                    labels: catLabels,
-                    datasets: [{
-                        data: catValues,
-                        backgroundColor: ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
-                }
-            });
+    <!-- 5. 삼겹살 꿀조합 페어링 추천 도감 (설문 데이터 반영) -->
+    <section class="section" id="pairing">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">PERFECT PAIRING</span>
+          <h2 class="section-title">삼겹살과 함께 담기 좋은 꿀조합</h2>
+          <p class="section-desc">사전 고객 설문조사에서 가장 많은 선택을 받은 인기 식재료 조합을 추천해 드립니다.</p>
+        </div>
 
-            // Product Chart (Bar) - Top 5
-            const sortedProducts = Object.entries(productMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            const prodLabels = sortedProducts.map(item => item[0]);
-            const prodValues = sortedProducts.map(item => item[1]);
+        <div class="pairing-grid">
+          <!-- Card 1 -->
+          <article class="pairing-card">
+            <div class="pairing-icon-badge">🥬</div>
+            <h3 class="pairing-title">신선 쌈채소 &amp; 통마늘</h3>
+            <p class="pairing-desc">
+              아삭한 상추와 향긋한 깻잎, 노릇하게 구워 먹는 통마늘은 삼겹살의 고소한 육즙을 가장 풍부하게 돋워줍니다.
+            </p>
+            <div class="pairing-tags">
+              <span class="pairing-tag">#상추</span>
+              <span class="pairing-tag">#깻잎</span>
+              <span class="pairing-tag">#깐마늘</span>
+              <span class="pairing-tag">#청양고추</span>
+            </div>
+          </article>
 
-            if (productChartInstance) productChartInstance.destroy();
-            const ctxProd = document.getElementById('productChart').getContext('2d');
-            productChartInstance = new Chart(ctxProd, {
-                type: 'bar',
-                data: {
-                    labels: prodLabels,
-                    datasets: [{
-                        label: '판매 수량',
-                        data: prodValues,
-                        backgroundColor: '#6366f1',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
+          <!-- Card 2 -->
+          <article class="pairing-card">
+            <div class="pairing-icon-badge">🍄</div>
+            <h3 class="pairing-title">버섯 &amp; 달콤 햇양파</h3>
+            <p class="pairing-desc">
+              고기 기름을 머금어 쫄깃해지는 새송이버섯과 구울수록 달큼해지는 양파는 고기 한 판의 만족도를 두 배로 높여줍니다.
+            </p>
+            <div class="pairing-tags">
+              <span class="pairing-tag">#새송이버섯</span>
+              <span class="pairing-tag">#팽이버섯</span>
+              <span class="pairing-tag">#구이용양파</span>
+            </div>
+          </article>
 
-        // Search & Filter event handler
-        document.getElementById('searchBtn').addEventListener('click', () => {
-            const startDate = document.getElementById('filterStartDate').value;
-            const endDate = document.getElementById('filterEndDate').value;
-            const storeVal = document.getElementById('filterStore').value;
-            const categoryVal = document.getElementById('filterCategory').value;
-            const eventVal = document.getElementById('filterEvent').value;
-            const keywordVal = document.getElementById('filterKeyword').value.trim().toLowerCase();
+          <!-- Card 3 -->
+          <article class="pairing-card">
+            <div class="pairing-icon-badge">🥤</div>
+            <h3 class="pairing-title">구수한 특제 쌈장 &amp; 탄산수</h3>
+            <p class="pairing-desc">
+              마늘과 고추를 듬뿍 찍어 먹는 고기 전용 쌈장과 식사 후 느끼함을 싹 잡아주는 톡 쏘는 라임 탄산수로 완벽한 마무리!
+            </p>
+            <div class="pairing-tags">
+              <span class="pairing-tag">#고기쌈장</span>
+              <span class="pairing-tag">#시원한탄산수</span>
+              <span class="pairing-tag">#맛김치</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
 
-            const filtered = currentData.filter(item => {
-                const matchStartDate = !startDate || item.일자 >= startDate;
-                const matchEndDate = !endDate || item.일자 <= endDate;
-                const matchStore = !storeVal || item.점포 === storeVal;
-                const matchCategory = !categoryVal || item.카테고리 === categoryVal;
-                const matchEvent = !eventVal || item.행사적용 === eventVal;
-                
-                const matchKeyword = !keywordVal || 
-                    (item.상품명 && item.상품명.toLowerCase().includes(keywordVal)) || 
-                    (item.상품코드 && item.상품코드.toLowerCase().includes(keywordVal));
+    <!-- 6. 매장 정보 및 오시는 길 (부산 리버점) -->
+    <section class="section section-alt" id="store">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">STORE LOCATION</span>
+          <h2 class="section-title">이마트 리버점 오시는 길</h2>
+          <p class="section-desc">본 프로모션은 이마트 리버점 단독 행사로 진행됩니다. 주말 장보기 방문을 환영합니다!</p>
+        </div>
 
-                return matchStartDate && matchEndDate && matchStore && matchCategory && matchEvent && matchKeyword;
-            });
+        <div class="store-grid">
+          <!-- 매장 상세 카드 -->
+          <div class="store-card">
+            <h3>이마트 리버점 안내</h3>
+            <div class="store-meta-list">
+              <div class="store-meta-item">
+                <div class="store-meta-icon">📍</div>
+                <div>
+                  <div class="store-meta-label">위치 / 주소</div>
+                  <div class="store-meta-val">부산광역시 주요 상권 내 이마트 리버점 신선식품 매장</div>
+                </div>
+              </div>
+              <div class="store-meta-item">
+                <div class="store-meta-icon">⏰</div>
+                <div>
+                  <div class="store-meta-label">영업시간 (행사일 동일)</div>
+                  <div class="store-meta-val">오전 10:00 ~ 오후 22:00 (주말 정상 영업)</div>
+                </div>
+              </div>
+              <div class="store-meta-item">
+                <div class="store-meta-icon">🚗</div>
+                <div>
+                  <div class="store-meta-label">주차 혜택</div>
+                  <div class="store-meta-val">3만원 이상 구매 시 2시간 무료 주차 지원</div>
+                </div>
+              </div>
+              <div class="store-meta-item">
+                <div class="store-meta-icon">🥩</div>
+                <div>
+                  <div class="store-meta-label">행사 매대 위치</div>
+                  <div class="store-meta-val">지하 1층 신선정육 코너 (FR-201 특별 행사 매대)</div>
+                </div>
+              </div>
+            </div>
 
-            renderDashboard(filtered);
-        });
+            <div class="store-btn-group">
+              <button class="store-btn primary" id="addCalendarBtn">
+                <span>📅</span>
+                <span>캘린더에 일정 저장</span>
+              </button>
+              <button class="store-btn" id="shareLinkBtn">
+                <span>🔗</span>
+                <span>링크 복사하기</span>
+              </button>
+            </div>
+          </div>
 
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            document.getElementById('filterStartDate').value = '';
-            document.getElementById('filterEndDate').value = '';
-            document.getElementById('filterStore').value = '';
-            document.getElementById('filterCategory').value = '';
-            document.getElementById('filterEvent').value = '';
-            document.getElementById('filterKeyword').value = '';
-            setDefaultDates();
-            renderDashboard(currentData);
-        });
+          <!-- 매장 시각화 지도 플레이스홀더 -->
+          <div class="store-map-placeholder">
+            <div class="map-pin">📍</div>
+            <div class="map-caption">이마트 리버점 단독 행사 매장</div>
+            <p style="font-size: 0.85rem; color: #64748B; margin-top: 6px;">정육 코너 &amp; 신선 채소 연계 진열대 운영</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        document.getElementById('resetDataBtn').addEventListener('click', () => {
-            currentData = [...defaultData];
-            populateFilters();
-            setDefaultDates();
-            renderDashboard(currentData);
-        });
+    <!-- 7. FAQ 자주 묻는 질문 -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">FREQUENTLY ASKED</span>
+          <h2 class="section-title">자주 묻는 질문 (FAQ)</h2>
+          <p class="section-desc">행사 참여 전 고객님들께서 가장 많이 궁금해하시는 사항을 확인해보세요.</p>
+        </div>
 
-        // Modal Controls
-        const modal = document.getElementById('addModal');
-        document.getElementById('openAddModalBtn').addEventListener('click', () => {
-            document.getElementById('newDate').value = new Date().toISOString().split('T')[0];
-            modal.classList.remove('hidden');
-            calcNewSales();
-        });
-        document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.add('hidden'));
-        document.getElementById('closeModalCancelBtn').addEventListener('click', () => modal.classList.add('hidden'));
+        <div class="faq-list">
+          <!-- Q1 -->
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Q. 35,000원 결제 금액 조건에 삼겹살 가격도 포함되나요?</span>
+              <span class="faq-toggle-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                네, 맞습니다! 행사 대상인 국내산 삼겹살(정상가 13,900원)을 포함하여 장바구니 총액이 <strong>할인 전 35,000원 이상</strong>이면 2,000원 즉시 할인이 적용됩니다.
+              </div>
+            </div>
+          </div>
 
-        // Calculate sales live in modal
-        function calcNewSales() {
-            const qty = Number(document.getElementById('newQty').value) || 0;
-            const price = Number(document.getElementById('newPrice').value) || 0;
-            const discount = Number(document.getElementById('newDiscount').value) || 0;
-            const sales = (qty * price) - discount;
-            document.getElementById('newSalesCalc').value = formatKRW(sales >= 0 ? sales : 0);
-            return sales >= 0 ? sales : 0;
-        }
+          <!-- Q2 -->
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Q. 삼겹살을 2팩 구매하면 4,000원이 할인되나요?</span>
+              <span class="faq-toggle-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                본 프로모션은 더 많은 고객님께 공평한 혜택을 드리기 위해 <strong>영수증 1개당 삼겹살 1팩(2,000원 할인)으로 한정</strong>됩니다. 추가 구매 팩은 정상가로 결제됩니다.
+              </div>
+            </div>
+          </div>
 
-        ['newQty', 'newPrice', 'newDiscount'].forEach(id => {
-            document.getElementById(id).addEventListener('input', calcNewSales);
-        });
+          <!-- Q3 -->
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Q. 타 카드사 할인이나 다른 할인 쿠폰과 중복 적용이 되나요?</span>
+              <span class="faq-toggle-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                이마트 리버점 단독 행사로 기획되었으며, 영수증 총액 할인 조건이 중복되는 일부 타 프로모션과는 중복 적용이 제한될 수 있습니다. 자세한 사항은 계산대 직원에게 문의 바랍니다.
+              </div>
+            </div>
+          </div>
 
-        // Handle Add New Data Form Submit
-        document.getElementById('addDataForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const newRow = {
-                일자: document.getElementById('newDate').value,
-                점포: document.getElementById('newStore').value.trim(),
-                카테고리: document.getElementById('newCategory').value.trim(),
-                상품코드: document.getElementById('newCode').value.trim(),
-                상품명: document.getElementById('newName').value.trim(),
-                판매수량: Number(document.getElementById('newQty').value) || 0,
-                정상단가: Number(document.getElementById('newPrice').value) || 0,
-                할인액: Number(document.getElementById('newDiscount').value) || 0,
-                매출액: calcNewSales(),
-                행사적용: document.getElementById('newIsEvent').value
-            };
+          <!-- Q4 -->
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Q. 행사 상품이 조기 품절될 수도 있나요?</span>
+              <span class="faq-toggle-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                당일 준비된 신선육 물량이 한정되어 있어 주말 저녁 늦은 시간 방문 시 조기 품절될 수 있습니다. 원활한 구매를 위해 이른 시간 방문을 권장해 드립니다.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-            currentData.push(newRow);
-            populateFilters();
-            renderDashboard(currentData);
-            modal.classList.add('hidden');
-            this.reset();
-        });
+  <!-- 푸터 -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>이마트 리버점 주말 프로모션</h4>
+          <p>부산광역시 이마트 리버점 신선정육팀 / 고객만족센터</p>
+          <div class="footer-legal-notice">
+            ※ 본 사이트는 2026년 11월 리버점 주말 프로모션을 위한 안내 웹페이지입니다.<br>
+            ※ 행사 품목 및 가격은 매장 사정에 따라 일부 변경될 수 있으며, 준비 수량 소진 시 조기 마감될 수 있습니다.
+          </div>
+        </div>
+        <div class="footer-share-box">
+          <h5>가족·친구에게 장보기 혜택 공유하기</h5>
+          <div class="share-btn-row">
+            <button class="share-action-btn" id="shareKakaoBtn">
+              <span>💬</span>
+              <span>혜택 공유하기</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 E-Mart River Branch Promotion. All Rights Reserved. Pure Vanilla JS &amp; CSS.
+      </div>
+    </div>
+  </footer>
 
-        // CSV File Uploader Handler
-        document.getElementById('csvFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+  <!-- 라이트박스 확대 모달 -->
+  <div class="lightbox-modal" id="lightboxModal" role="dialog" aria-modal="true" aria-label="이미지 크게 보기">
+    <div class="lightbox-content">
+      <button class="lightbox-close" id="lightboxClose" aria-label="닫기">&times;</button>
+      <img id="lightboxImg" src="" alt="확대된 이미지">
+    </div>
+  </div>
 
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const text = evt.target.result;
-                parseCSV(text);
-            };
-            reader.readAsText(file, 'utf-8');
-        });
+  <!-- 토스트 알림 팝업 -->
+  <div class="toast-notice" id="toastNotice" role="alert" aria-live="polite">
+    알림 메시지
+  </div>
 
-        function parseCSV(text) {
-            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
-            if (lines.length < 2) return;
+  <!-- 모바일 하단 플로팅 장바구니 바 -->
+  <div class="mobile-cart-bar" id="mobileCartBar">
+    <div class="mobile-cart-info">
+      <div class="status">예상 결제 금액</div>
+      <div class="amount" id="mobileCartAmount">13,900원</div>
+    </div>
+    <a href="#calculator" class="mobile-cart-btn">계산기 보기</a>
+  </div>
 
-            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-            const newRows = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const currentLine = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if (currentLine.length >= headers.length) {
-                    const rowObj = {};
-                    headers.forEach((h, index) => {
-                        let val = currentLine[index] ? currentLine[index].trim().replace(/^"|"$/g, '') : '';
-                        if (['판매수량', '정상단가', '할인액', '매출액'].includes(h)) {
-                            val = Number(val.replace(/[^0-9.-]+/g,"")) || 0;
-                        }
-                        rowObj[h] = val;
-                    });
-                    newRows.push(rowObj);
-                }
-            }
-
-            if (newRows.length > 0) {
-                currentData = newRows;
-                populateFilters();
-                setDefaultDates();
-                renderDashboard(currentData);
-            }
-        }
-
-        window.onload = function() {
-            initDashboard();
-        };
-    </script>
+  <!-- 순수 바닐라 자바스크립트 연결 -->
+  <script src="script.js"></script>
 </body>
 </html>
